@@ -1,0 +1,46 @@
+extends layout
+
+block content
+  .container.well
+    h2 Отчет по проектам
+    p.help-block.
+      Выберите название проекта (по желанию можете указать период выгрузки)
+    // и укажите от одного до пяти адресов электронной почты, на которые будет отправлен сформированный отчет.
+    p.help-block
+      span.text-danger *
+      span &nbsp;&mdash; обязательные поля
+    br
+    form.form-horizontal(method="POST")
+      .form-row
+        label.control-label Название проекта
+        span.text-danger *
+        select.form-control(name="project")
+          option(value="")
+          - if (projects)
+            - each proj in projects
+              option(value="#{proj.id}")
+                = proj.name
+      .row
+        .col-lg-6
+          .form-row
+            label.control-label Дата начала выгрузки
+            input.form-control.datepicker(type="text", name="since")
+        .col-lg-6
+          .form-row
+            label.control-label Дата окончания выгрузки
+            input.form-control.datepicker(type="text", name="till")
+      //
+          .row
+            .col-lg-11
+              .form-row
+                label.control-label Адреса электронной почты
+                span.text-danger *
+                input.form-control(type="text", name="email[]")
+            .col-lg-1
+              span.add-btn.glyphicon.glyphicon-plus
+      .form-row
+        -if (messages.error)
+          .alert.alert-danger= messages.error
+        button.btn.btn-success(type="submit") Отпарвить
+        i &nbsp;&nbsp;
+        a(href="/").btn.btn-default Назад

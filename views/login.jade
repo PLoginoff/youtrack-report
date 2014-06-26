@@ -1,0 +1,19 @@
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/stylesheets/bootstrap2.0.0.css')
+  body
+    .container
+      .login-form.span6.offset3
+        form.well(method="POST")
+          .control-group
+            label Логин
+            input(type="text", name="username")
+          .control-group
+            label Пароль
+            input(type="password", name="password")
+          .form-actions
+            button.btn.btn-default(type="submit") Войти
+          -if(messages)
+            div#note #{messages.info}

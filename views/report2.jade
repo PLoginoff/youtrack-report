@@ -1,0 +1,45 @@
+extends layout
+
+block content
+  .container.well
+    h2 Отчет по времени
+    p.help-block
+      span.text-danger *
+      &nbsp;&mdash; обязательные поля
+    br
+    form.form-horizontal(method="POST")
+      .form-row
+        label.control-label Название проекта
+          span.text-danger *
+        select.form-control(name="project")
+          option(value="")
+          - if (projects)
+            - each proj in projects
+              option(value="#{proj.id}")
+                = proj.name
+      .form-row
+        label.control-label Пользователь
+          span.text-danger *
+        select.form-control(name="user")
+          option(value="")
+          - if (projects)
+            - each proj in projects
+              option(value="#{proj.id}")
+                = proj.name
+      .row
+        .col-lg-6
+          .form-row
+            label.control-label Начало периода выгрузки
+              span.text-danger *
+            input.form-control.datepicker(type="text", name="since", value="#{since}")
+        .col-lg-6
+          .form-row
+            label.control-label Окончание периода выгрузки
+              span.text-danger *
+            input.form-control.datepicker(type="text", name="till", value="#{till}")
+      .form-row
+        -if (messages.error)
+          .alert.alert-danger= messages.error
+        button.btn.btn-success(type="submit") Создать
+        i &nbsp;&nbsp;
+        a(href="/").btn.btn-default Назад

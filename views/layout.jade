@@ -1,0 +1,23 @@
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/stylesheets/bootstrap.min.css')
+    link(rel='stylesheet', href='/stylesheets/datepicker.css')
+    link(rel='stylesheet', href='/stylesheets/style.css')
+  body
+    nav.navbar.navbar-inverse
+      .container
+        .navbar-header
+          a.navbar-brand(href="/") Engage360d
+        .collapse.navbar-collapse.pull-right
+          ul.nav.navbar-nav
+            li.pull-right
+              a(href="/logout") Выйти
+
+    block content
+
+    script(type='text/javascript', src='//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js')
+    script(type='text/javascript', src='/javascripts/bootstrap.min.js')
+    script(type='text/javascript', src='/javascripts/bootstrap-datepicker.js')
+    script(type='text/javascript', src='/javascripts/report1.js')
