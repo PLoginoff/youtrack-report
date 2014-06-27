@@ -90,14 +90,54 @@ YouTrackClient.prototype.getUser = function (username) {
         .then(handleXmlResponse);
 };
 
+YouTrackClient.prototype.getUsersChunk = function (start) {
+    start = start || 0;
+    return client('/rest/admin/user/?start=' + start).then(handleXmlResponse);
+};
+
 YouTrackClient.prototype.getAllUsers = function () {
-    return client('/rest/user/').then(handleXmlResponse);
+    var start = 0,
+        users = [],
+        that = this;
+
+    var getUser = function (obj) {
+        var chunk = [];
+
+        if (obj && obj.userRefs && obj.userRefs.user) {
+            chunk = obj.userRefs.user;
+        }
+        return chunk;
+    };
+
+    var addUsers = function (usersChunk) {
+        if (usersChunk.length > 0) {
+            start += 10;
+            users = users.concat(usersChunk);
+        } else {
+            start = -1;
+        }
+        return start;
+    };
+
+    var f = function (start) {
+        return that.getUsersChunk(start)
+            .then(getUser)
+            .then(addUsers);
+    };
+
+    var predicate = function (start) {
+        return start === -1;
+    };
+
+    var handler = function () {};
+
+    return when.iterate(f, predicate, handler, start).then(function () { return users; });
 };
 
 YouTrackClient.prototype.getUserGroups = function (username) {
     return client('/rest/admin/user/' + username + '/group')
         .then(handleXmlResponse);
-}
+};
 
 YouTrackClient.prototype.getAllProjectIssues = function (projectId) {
     return client(encodeURI('/rest/issue?filter=for: ' + projectId + '&max=1000&with=id&with=summary&with=created&with=updated&with=Assignee&with=Estimation&with=Spent time'))

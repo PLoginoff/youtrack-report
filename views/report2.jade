@@ -5,7 +5,7 @@ block content
     h2 Отчет по времени
     p.help-block
       span.text-danger *
-      &nbsp;&mdash; обязательные поля
+      span &nbsp;&mdash; обязательные поля
     br
     form.form-horizontal(method="POST")
       .form-row
@@ -22,10 +22,10 @@ block content
           span.text-danger *
         select.form-control(name="user")
           option(value="")
-          - if (projects)
-            - each proj in projects
-              option(value="#{proj.id}")
-                = proj.name
+          - if (users)
+            - each user in users
+              option(value="#{user.login}")
+                = user.fullname
       .row
         .col-lg-6
           .form-row

@@ -199,3 +199,38 @@ exports.getUsernamePositionHash = function (arr) {
 
     return hash;
 };
+
+exports.getUsers = function (obj) {
+    var users = [];
+
+    if (obj && obj.userRefs && obj.userRefs.user) {
+        users = obj.userRefs.user;
+    }
+
+    return users;
+};
+
+exports.getUserLogin = function (user) {
+    var login = '';
+
+    if (user && user['$'] && user['$']['login']) {
+        login = user['$']['login'];
+    }
+
+    return login;
+};
+
+exports.getUserLoginFullNameHash = function (user) {
+    var obj = {};
+
+    console.log(user);
+
+    if (user && user['user'] && user['user']['$']) {
+        obj = {
+            login: user['user']['$']['login'],
+            fullname: user['user']['$']['fullName']
+        };
+    }
+
+    return obj;
+}

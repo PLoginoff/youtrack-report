@@ -38,11 +38,14 @@ exports.report1 = function(req, res){
 
     when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD))
         .then(client.getAllProjects)
-        .then(when.lift(helpers.getProjectIds))
+        .then(helpers.getProjectIds)
         .then(client.getProjectList.bind(client))
-        .then(when.lift(helpers.formatProjectList))
+        .then(helpers.formatProjectList)
         .then(function (projects) {
-            res.render('report1', { title: 'Отчет по проектам', projects: projects});
+            res.render('report1', {
+                title: 'Отчет по проектам',
+                projects: projects}
+            );
         })
         .otherwise(function (err) {
             req.flash('error', err);
@@ -120,10 +123,10 @@ exports.genReport1 = function (req, res) {
     var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
 
     var projectLeadFullNamePromise = loggedInPromise
-        .then(client.getProject.bind(client, req.body.project))
-        .then(helpers.getProjectLeadUsername)
-        .then(client.getUser)
-        .then(helpers.getUserFullName);
+            .then(client.getProject.bind(client, req.body.project))
+            .then(helpers.getProjectLeadUsername)
+            .then(client.getUser)
+            .then(helpers.getUserFullName);
 
     var projectIssuesPromise = when.try(
             helpers.getIssuesFilteredByDate,
@@ -133,9 +136,9 @@ exports.genReport1 = function (req, res) {
         );
 
     var projectAssigneePositionsPromise = projectIssuesPromise
-        .then(helpers.getProjectIssuesUsers)
-        .then(function (usernames) { return when.join(usernames, when.map(usernames, client.getUserGroups)); })
-        .then(function (usersInfo) { return when.join(usersInfo[0], when.map(usersInfo[1], helpers.getUserPosition)); });
+            .then(helpers.getProjectIssuesUsers)
+            .then(function (usernames) { return when.join(usernames, when.map(usernames, client.getUserGroups)); })
+            .then(function (usersInfo) { return when.join(usersInfo[0], when.map(usersInfo[1], helpers.getUserPosition)); });
 
     when.join(
             projectLeadFullNamePromise,
@@ -151,26 +154,37 @@ exports.report2 = function(req, res){
 
     var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
 
-    when.join(
-        loggedInPromise
-            .then(when.lift(client.getAllProjects))
-            .then(when.lift(helpers.getProjectIds))
+    var projectListPromise = loggedInPromise
+            .then(client.getAllProjects)
+            .then(helpers.getProjectIds)
             .then(client.getProjectList.bind(client))
-            .then(when.lift(helpers.formatProjectList))
-    )
-    .then(function (result) {
-        console.log(result);
-        res.render('report2', {
-            title: 'Отчет по времени',
-            projects: result[0],
-            since: moment().day(-1).format('DD.MM.YYYY'),
-            till: moment().format('DD.MM.YYYY')
+            .then(helpers.formatProjectList);
+
+    var userListPromise = loggedInPromise
+            .then(client.getAllUsers.bind(client))
+            .then(function (users) { return when.map(users, helpers.getUserLogin); })
+            .then(function (usernames) { return when.map(usernames, client.getUser); })
+            .then(function (users) { return when.map(users, helpers.getUserLoginFullNameHash); });
+
+    when.join(
+            projectListPromise,
+            userListPromise
+        )
+        .then(function (result) {
+            console.log(result);
+            res.render('report2', {
+                title: 'Отчет по времени',
+                projects: result[0],
+                users: result[1],
+                since: moment().day(-1).format('DD.MM.YYYY'),
+                till: moment().format('DD.MM.YYYY')
+            });
+        })
+        .otherwise(function (err) {
+            console.log(err);
+            req.flash('error', err);
+            res.render('report2');
         });
-    })
-    .otherwise(function (err) {
-        req.flash('error', err);
-        res.render('report2');
-    });
 };
 
 exports.genReport2 = function (req, res) {
