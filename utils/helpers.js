@@ -235,7 +235,7 @@ exports.sanitizeValue = function (value) {
     var sanitized = value;
 
     if (typeof value.replace === "function") {
-        sanitized = sanitized.replace(/[&]/g, 'and')
+        sanitized = sanitized.replace(/[&]/g, '\u0026')
         console.log('sanitized: ' + sanitized);
     }
 
