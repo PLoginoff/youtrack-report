@@ -171,7 +171,6 @@ exports.report2 = function(req, res){
             userListPromise
         )
         .then(function (result) {
-            console.log(result);
             res.render('report2', {
                 title: 'Отчет по времени',
                 projects: result[0],

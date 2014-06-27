@@ -191,8 +191,6 @@ exports.getUsernamePositionHash = function (arr) {
         hash = {},
         i;
 
-    console.log(positions[0]);
-
     for (i = 0; i < usernames.length; i++) {
         hash[usernames[i]] = positions[i];
     }
@@ -223,8 +221,6 @@ exports.getUserLogin = function (user) {
 exports.getUserLoginFullNameHash = function (user) {
     var obj = {};
 
-    console.log(user);
-
     if (user && user['user'] && user['user']['$']) {
         obj = {
             login: user['user']['$']['login'],
@@ -234,3 +230,14 @@ exports.getUserLoginFullNameHash = function (user) {
 
     return obj;
 }
+
+exports.sanitizeValue = function (value) {
+    var sanitized = value;
+
+    if (typeof value.replace === "function") {
+        sanitized = sanitized.replace(/[&]/g, 'and')
+        console.log('sanitized: ' + sanitized);
+    }
+
+    return sanitized;
+};

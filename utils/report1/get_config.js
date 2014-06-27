@@ -58,7 +58,7 @@ var getConf = function (data) {
     for (i = 0; i < issues.length; i++) {
         conf.rows.push([
             helpers.getIssueId(issues[i]),
-            helpers.getIssueFieldValue(issues[i]['field'], 'summary'),
+            helpers.sanitizeValue(helpers.getIssueFieldValue(issues[i]['field'], 'summary') + ''),
             helpers.getAssigneeFullName(helpers.getIssueFieldValue(issues[i]['field'], 'Assignee')),
             data.assigneePositions[helpers.getAssigneeUsername(helpers.getIssueFieldValue(issues[i]['field'], 'Assignee'))] || '',
             helpers.getIssueFieldValue(issues[i]['field'], 'Estimation'),
