@@ -51,12 +51,12 @@ exports.report1 = function(req, res){
 };
 
 exports.genReport1 = function (req, res) {
-    var client = new YouTrackClient(config.YOUTRACK_HOST),
-        data = {
+    var data = {
             PROJECT_NAME: req.body.project,
             GEN_DATE: moment().format('DD/MM/YYYY'),
             PROJECT_LEAD: '',
-            issues: []
+            issues: [],
+            assigneePositions: []
         };
 
     // || !req.body.email.join('').trim()
@@ -65,14 +65,6 @@ exports.genReport1 = function (req, res) {
         res.redirect('report/1');
     }
 
-    function streamExcelToBrowser(issues) {
-        var result, conf;
-
-//        console.log(issues);
-
-        data.issues = issues;
-        conf = getConf(data);
-        result = excel.execute(conf);
 /**
         // Send email if there are some emails
         if (req.body.email.length > 0) {
@@ -103,50 +95,64 @@ exports.genReport1 = function (req, res) {
             });
         }
 **/
+
+    function handleSuccess(result) {
+        var report;
+
+        data.PROJECT_LEAD = result[0];
+        data.issues = result[1];
+        data.assigneePositions = helpers.getUsernamePositionHash(result[2]);
+        report = excel.execute(getConf(data));
+
         res.setHeader('Content-Type', 'application/vnd.openxmlformats');
         res.setHeader("Content-Disposition", "attachment; filename=" + "Report by project.xlsx");
-        res.end(result, 'binary');
+        res.end(report, 'binary');
     }
 
-    var whenLoggedIn = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
-    var issues;
-    var userPositions;
+    function handleFailure(err) {
+        console.log(err);
+        req.flash('error', err);
+        res.redirect('/report/1');
+    }
 
-    whenLoggedIn
+    var client = new YouTrackClient(config.YOUTRACK_HOST);
+
+    var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
+
+    var projectLeadFullNamePromise = loggedInPromise
         .then(client.getProject.bind(client, req.body.project))
-        .then(when.lift(helpers.getProjectLeadUsername))
+        .then(helpers.getProjectLeadUsername)
         .then(client.getUser)
-        .then(when.lift(helpers.getUserFullName))
-        .then(when.lift(function (projectLeadFullName) { return data.PROJECT_LEAD = projectLeadFullName; }))
-        .then(when.try(
-                helpers.getIssuesFilteredByDate,
-                whenLoggedIn.then(client.getAllProjectIssues.bind(client, req.body.project)),
-                req.body.since,
-                req.body.till
-            )
+        .then(helpers.getUserFullName);
 
-//
-//            .then(when.lift(helpers.getProjectIssuesUsers))
-//            .then(when.lift(function (users) { return when.map(users, client.getUserGroups); }))
-//            .then(when.list(function (userGroups) { return when.map(userGroups, helpers.getUserPosition); }))
+    var projectIssuesPromise = when.try(
+            helpers.getIssuesFilteredByDate,
+            loggedInPromise.then(client.getAllProjectIssues.bind(client, req.body.project)),
+            req.body.since,
+            req.body.till
+        );
 
+    var projectAssigneePositionsPromise = projectIssuesPromise
+        .then(helpers.getProjectIssuesUsers)
+        .then(function (usernames) { return when.join(usernames, when.map(usernames, client.getUserGroups)); })
+        .then(function (usersInfo) { return when.join(usersInfo[0], when.map(usersInfo[1], helpers.getUserPosition)); });
 
-            .then(streamExcelToBrowser)
+    when.join(
+            projectLeadFullNamePromise,
+            projectIssuesPromise,
+            projectAssigneePositionsPromise
         )
-        .otherwise(function (err) {
-            console.log(err);
-            req.flash('error', err);
-            res.redirect('/report/1');
-        });
+        .then(handleSuccess)
+        .otherwise(handleFailure);
 };
 
 exports.report2 = function(req, res){
     var client = new YouTrackClient(config.YOUTRACK_HOST);
 
-    var whenLoggedIn = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
+    var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
 
     when.join(
-        whenLoggedIn
+        loggedInPromise
             .then(when.lift(client.getAllProjects))
             .then(when.lift(helpers.getProjectIds))
             .then(client.getProjectList.bind(client))

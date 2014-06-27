@@ -60,7 +60,7 @@ var getConf = function (data) {
             helpers.getIssueId(issues[i]),
             helpers.getIssueFieldValue(issues[i]['field'], 'summary'),
             helpers.getAssigneeFullName(helpers.getIssueFieldValue(issues[i]['field'], 'Assignee')),
-            '-',
+            data.assigneePositions[helpers.getAssigneeUsername(helpers.getIssueFieldValue(issues[i]['field'], 'Assignee'))] || '',
             helpers.getIssueFieldValue(issues[i]['field'], 'Estimation'),
             helpers.getIssueFieldValue(issues[i]['field'], 'Spent time')
         ]);

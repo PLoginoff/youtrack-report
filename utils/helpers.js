@@ -177,7 +177,25 @@ exports.getProjectIssuesUsers = function (issues) {
             assignees.push(username);
         }
     }
-    console.log(assignees);
 
     return assignees;
+};
+
+/**
+ *
+ * @param arr [array, array]
+ */
+exports.getUsernamePositionHash = function (arr) {
+    var usernames = arr[0],
+        positions = arr[1],
+        hash = {},
+        i;
+
+    console.log(positions[0]);
+
+    for (i = 0; i < usernames.length; i++) {
+        hash[usernames[i]] = positions[i];
+    }
+
+    return hash;
 };
