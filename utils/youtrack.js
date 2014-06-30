@@ -144,6 +144,55 @@ YouTrackClient.prototype.getAllProjectIssues = function (projectId) {
         .then(handleXmlResponse);
 };
 
+/**
+ *
+ * @param projectId
+ * @param updatedAfter int Unix Timestamp in _seconds_
+ * @returns {*}
+ */
+YouTrackClient.prototype.getProjectIssues = function (projectId, updatedAfter) {
+    var uri = '/rest/issue/byproject/' + projectId + '?max=100',
+        after = 0,
+        issues = [];
+
+    if (updatedAfter !== undefined) {
+        uri += '&updatedAfter=' + (updatedAfter * 1000); // convert to milliseconds
+    }
+
+    var getIssues = function (obj) {
+        var chunk = [];
+        if (obj && obj.issues && obj.issues.issue) {
+            chunk = obj.issues.issue;
+        }
+        return chunk;
+    };
+
+    var addIssues = function (issuesChunk) {
+        if (issuesChunk.length > 0) {
+            after += 100;
+            issues = issues.concat(issuesChunk);
+        } else {
+            after = -1;
+        }
+        return after;
+    };
+
+    var f = function (after) {
+        return client(uri + '&after=' + after)
+            .then(handleXmlResponse)
+            .then(getIssues)
+            .then(addIssues);
+    };
+
+    var predicate = function (after) {
+        return after === -1;
+    };
+
+    var handler = function () {};
+
+    return when.iterate(f, predicate, handler, after).then(function () { return issues; });
+};
+
 YouTrackClient.prototype.getIssueWorkItem = function (issueId) {
     return client('/rest/issue/' + issueId + '/timetracking/workitem/')
         .then(handleXmlResponse);
