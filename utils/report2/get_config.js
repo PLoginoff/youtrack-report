@@ -79,7 +79,7 @@ var getConf = function (data) {
 
     conf.rows = [];
 
-    currentDate = moment.unix(start.format('X'));
+    currentDate = moment.unix(since.format('X'));
     while (currentDate.diff(end, 'days') <= 0) {
         row = [];
         if (currentDate.unix() === start.unix()) {
@@ -93,15 +93,17 @@ var getConf = function (data) {
         weekHours = 0;
         dayHours = null;
         while (weekday <= 7) {
-            if (currentDate.diff(since, 'days') >= 0 && currentDate.diff(till, 'days') <= 0) {
-                dayHours = dates[currentDate.format('YYYY-MM-DD')] || 0;
-                weekHours += dayHours;
-                row.push(dayHours);
+            if (currentDate.weekday() === weekday % 7) {
+                if (currentDate.diff(since, 'days') >= 0 && currentDate.diff(till, 'days') <= 0) {
+                    dayHours = dates[currentDate.format('YYYY-MM-DD')] || 0;
+                    weekHours += dayHours;
+                    row.push(dayHours);
+                } else {
+                    row.push(null);
+                }
+                currentDate.add(1, 'day');
             } else {
                 row.push(null);
-            }
-            if (currentDate.weekday() === weekday % 7) {
-                currentDate.add(1, 'day');
             }
             weekday += 1;
         }
@@ -109,7 +111,7 @@ var getConf = function (data) {
         conf.rows.push(row);
     }
     conf.rows.push(["Дата выгрузки", moment().format('DD.MM.YYYY'), null, null, null, null, null, null, null, null]);
-    conf.rows.push(["Период выгрузки", start.format('DD.MM.YYYY') + ' - ' + end.format('DD.MM.YYYY'), null, null, null, null, null, null, null, null]);
+    conf.rows.push(["Период выгрузки", since.format('DD.MM.YYYY') + ' - ' + till.format('DD.MM.YYYY'), null, null, null, null, null, null, null, null]);
 
     return conf;
 };
