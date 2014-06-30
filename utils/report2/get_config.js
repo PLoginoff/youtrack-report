@@ -82,7 +82,7 @@ var getConf = function (data) {
     currentDate = moment.unix(since.format('X'));
     while (currentDate.diff(end, 'days') <= 0) {
         row = [];
-        if (currentDate.unix() === start.unix()) {
+        if (conf.rows.length === 0) {
             row.push(userFullName);
             row.push(projectName);
         } else {
