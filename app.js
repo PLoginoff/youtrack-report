@@ -56,6 +56,7 @@ app.get('/', ensureAuthenticated, routes.index);
 app.get('/report/1', ensureAuthenticated, routes.report1);
 app.post('/report/1', ensureAuthenticated, routes.genReport1);
 app.get('/report/2', ensureAuthenticated, routes.report2);
+app.post('/report/2', ensureAuthenticated, routes.genReport2);
 
 /// catch 404 and forwarding to error handler
 app.use(function(req, res, next) {

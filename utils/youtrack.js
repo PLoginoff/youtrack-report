@@ -144,4 +144,9 @@ YouTrackClient.prototype.getAllProjectIssues = function (projectId) {
         .then(handleXmlResponse);
 };
 
+YouTrackClient.prototype.getIssueWorkItem = function (issueId) {
+    return client('/rest/issue/' + issueId + '/timetracking/workitem/')
+        .then(handleXmlResponse);
+};
+
 module.exports = YouTrackClient;

@@ -1,7 +1,24 @@
 var when = require('when');
 var moment = require('moment');
 
-// TODO don't export it
+
+/**
+ *
+ * @param date string in format DD.MM.YYYY
+ * @returns {number}
+ */
+exports.getUnixTimestamp = function (date) {
+    var timestamp = 0, d;
+
+    if (typeof date === 'string') {
+        d = date.split('.').reverse().join('-');
+        timestamp = moment(d).format('X');
+    }
+
+    return timestamp;
+};
+
+// TODO use it as helper in other functions, don't export it
 exports.getPropertyValue = function (obj, objName, propName) {
     var propValue = '';
 
@@ -208,7 +225,7 @@ exports.getUsers = function (obj) {
     return users;
 };
 
-exports.getUserLogin = function (user) {
+exports.getUserLogin = getUserLogin = function (user) {
     var login = '';
 
     if (user && user['$'] && user['$']['login']) {
@@ -229,15 +246,80 @@ exports.getUserLoginFullNameHash = function (user) {
     }
 
     return obj;
-}
+};
 
 exports.sanitizeValue = function (value) {
     var sanitized = value;
 
     if (typeof value.replace === "function") {
-        sanitized = sanitized.replace(/[&]/g, '\u0026')
-        console.log('sanitized: ' + sanitized);
+        sanitized = sanitized.replace(/[&]/g, '\u0026');
     }
 
     return sanitized;
+};
+
+exports.getProjectName = function (obj) {
+    var name = '';
+
+    if (obj && obj['project'] && obj['project']['$']) {
+        name = obj['project']['$']['name'];
+    }
+
+    return name;
+};
+
+exports.getProjectIssues = function (obj) {
+    var issues = [];
+
+    if (obj && obj['issueCompacts'] && obj['issueCompacts']['issue']) {
+        issues = obj['issueCompacts']['issue'];
+    }
+
+    return issues;
+};
+
+exports.getWorkItems = function (obj) {
+    var workItems = [];
+
+    if (obj && obj['workItems'] && obj['workItems']['workItem']) {
+        workItems = obj['workItems']['workItem'];
+    }
+
+    return workItems;
+};
+
+exports.filterWorkItemsByUserLogin = function (workItems, login) {
+    var filtered = [], i;
+
+    for (i = 0; i < workItems.length; i++) {
+        if (getUserLogin(workItems[i]['author'][0]) === login) {
+            filtered.push(workItems[i]);
+        }
+    }
+
+    return filtered;
+};
+
+/**
+ *
+ * @param workItems
+ * @param since unix time stamp
+ * @param till unix time stamp
+ * @returns []
+ */
+exports.filterWorkItemsByDate = function (workItems, since, till) {
+    var filtered = [], date, i;
+
+    if (!since || !till) {
+        return workItems;
+    }
+
+    for (i = 0; i < workItems.length; i++) {
+        date = workItems[i]['date'][0];
+        if (date >= since && date <= till) {
+            filtered.push(workItems[i]);
+        }
+    }
+
+    return filtered;
 };
