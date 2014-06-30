@@ -315,7 +315,7 @@ exports.filterWorkItemsByDate = function (workItems, since, till) {
     }
 
     for (i = 0; i < workItems.length; i++) {
-        date = workItems[i]['date'][0];
+        date = Math.round(workItems[i]['date'][0]/1000);
         if (date >= since && date <= till) {
             filtered.push(workItems[i]);
         }
