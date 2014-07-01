@@ -137,7 +137,8 @@ exports.genReport1 = function (req, res) {
 
     // Unix Timestamps
     var since = req.body.since ? helpers.getUnixTimestamp(req.body.since) : 0;
-    var till = req.body.till ? helpers.getUnixTimestamp(req.body.till) : moment().format('X');
+    // TODO refactor
+    var till = req.body.till ? helpers.getUnixTimestamp(req.body.till) + 86400 : moment().format('X');
 
     var client = new YouTrackClient(config.YOUTRACK_HOST);
 
