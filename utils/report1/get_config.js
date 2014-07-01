@@ -1,3 +1,4 @@
+var moment = require('moment');
 var helpers = require('./../helpers');
 
 /**
@@ -8,8 +9,17 @@ var helpers = require('./../helpers');
  * @returns object
  */
 var getConf = function (data) {
-    var issues = data.issues,
+    var projectId = data[0],
+        projectLeadFullName = data[1],
+        issues = data[2],
+        usersInfo = data[3],
+        workItems = data[4],
         conf = {},
+        issueId,
+        durations,
+        estimationTime,
+        spentTime,
+        sellTime,
         i;
 
     conf.stylesXmlFile = "utils/report1/styles.xml";
@@ -48,22 +58,33 @@ var getConf = function (data) {
     ];
 
     conf.rows = [
-        [null, null, "Отчет в часах по клиенту " + data.PROJECT_NAME, null, null, null],
-        [null, null, "ID:", data.PROJECT_NAME, null, null],
-        [null, null, "Дата формирования отчета", data.GEN_DATE, null, null],
-        [null, null, "Руководитель проекта", data.PROJECT_LEAD, null, null],
+        [null, null, "Отчет в часах по клиенту " + projectId, null, null, null],
+        [null, null, "ID:", projectId, null, null],
+        [null, null, "Дата формирования отчета", moment().format('DD.MM.YYYY'), null, null],
+        [null, null, "Руководитель проекта", projectLeadFullName, null, null],
+        [null, null, null, null, null, null],
         ["Номер таска", "Наименование работы", "Исполнитель", "Должность", "Время продажи (мин.)", "Затраченное время (мин.)"]
     ];
 
     for (i = 0; i < issues.length; i++) {
-        conf.rows.push([
-            helpers.getIssueId(issues[i]),
-            helpers.sanitizeValue(helpers.getIssueFieldValue(issues[i]['field'], 'summary') + ''),
-            helpers.getAssigneeFullName(helpers.getIssueFieldValue(issues[i]['field'], 'Assignee')),
-            data.assigneePositions[helpers.getAssigneeUsername(helpers.getIssueFieldValue(issues[i]['field'], 'Assignee'))] || '',
-            helpers.getIssueFieldValue(issues[i]['field'], 'Estimation'),
-            helpers.getIssueFieldValue(issues[i]['field'], 'Spent time')
-        ]);
+        issueId = helpers.getIssueId(issues[i]);
+        durations = workItems[issueId] || {};
+        for (var userLogin in durations) {
+            if (durations.hasOwnProperty(userLogin)) {
+                estimationTime = helpers.getIssueFieldValue(issues[i]['field'], 'Estimation');
+                spentTime = helpers.getIssueFieldValue(issues[i]['field'], 'Spent time');
+                sellTime = Math.round(estimationTime * durations[userLogin] / spentTime);
+
+                conf.rows.push([
+                    issueId,
+                    helpers.sanitizeValue(helpers.getIssueFieldValue(issues[i]['field'], 'summary') + ''),
+                    usersInfo[userLogin]['fullName'],
+                    usersInfo[userLogin]['position'] || '',
+                    sellTime,
+                    durations[userLogin]
+                ]);
+            }
+        }
     }
 
     return conf;

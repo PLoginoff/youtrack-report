@@ -55,14 +55,6 @@ exports.report1 = function(req, res){
 };
 
 exports.genReport1 = function (req, res) {
-    var data = {
-            PROJECT_NAME: req.body.project,
-            GEN_DATE: moment().format('DD/MM/YYYY'),
-            PROJECT_LEAD: '',
-            issues: [],
-            assigneePositions: []
-        };
-
     // || !req.body.email.join('').trim()
     if (!req.body.project) {
         req.flash('error', 'Не заполнены обязательные поля, отмеченные звездочкой');
@@ -101,14 +93,37 @@ exports.genReport1 = function (req, res) {
         }
 **/
 
-    function handleSuccess(result) {
-        var report;
+    function formatWorkItems (workItems) {
+        var issues = {}, id, author, duration, i;
 
-        data.PROJECT_LEAD = result[0];
-        data.issues = result[1];
-        data.assigneePositions = helpers.getUsernamePositionHash(result[2]);
-        report = excel.execute(getReport1Conf(data));
+        for (i = 0; i < workItems.length; i++) {
+            id = workItems[i]['$']['url'].match(/issue\/([^\/]+)\/timetracking/)[1];
+            author = helpers.getUserLogin(workItems[i]['author'][0]);
+            duration = workItems[i]['duration'][0];
+            if (issues[id] === undefined) {
+                issues[id] = {};
+            }
+            if (issues[id][author] === undefined) {
+                issues[id][author] = 0;
+            }
+            issues[id][author] += parseInt(duration, 10);
+        }
+        return issues;
+    }
 
+    function getUsersInfo (logins, fullNames, positions) {
+        var info = {}, i;
+        for (i = 0; i < logins.length; i++) {
+            info[logins[i]] = {
+                fullName: fullNames[i],
+                position: positions[i]
+            };
+        }
+        return info;
+    }
+
+    function handleSuccess(config) {
+        var report = excel.execute(config);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats');
         res.setHeader("Content-Disposition", "attachment; filename=" + "Report by project.xlsx");
         res.end(report, 'binary');
@@ -120,33 +135,58 @@ exports.genReport1 = function (req, res) {
         res.redirect('/report/1');
     }
 
+    // Unix Timestamps
+    var since = req.body.since ? helpers.getUnixTimestamp(req.body.since) : 0;
+    var till = req.body.till ? helpers.getUnixTimestamp(req.body.till) : moment().format('X');
+
     var client = new YouTrackClient(config.YOUTRACK_HOST);
 
     var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
 
     var projectLeadFullNamePromise = loggedInPromise
+            // TODO use .fold()
             .then(client.getProject.bind(client, req.body.project))
             .then(helpers.getProjectLeadUsername)
             .then(client.getUser)
             .then(helpers.getUserFullName);
 
-    var projectIssuesPromise = when.try(
-            helpers.getIssuesFilteredByDate,
-            loggedInPromise.then(client.getAllProjectIssues.bind(client, req.body.project)),
-            req.body.since,
-            req.body.till
-        );
+    var projectIssuesPromise = loggedInPromise
+            .then(client.getProjectIssues.bind(client, req.body.project, since));
 
-    var projectAssigneePositionsPromise = projectIssuesPromise
-            .then(helpers.getProjectIssuesUsers)
-            .then(function (usernames) { return when.join(usernames, when.map(usernames, client.getUserGroups)); })
-            .then(function (usersInfo) { return when.join(usersInfo[0], when.map(usersInfo[1], helpers.getUserPosition)); });
+    var workItemsPromise = projectIssuesPromise
+            .then(function (issues) { return when.map(issues, helpers.getIssueId); })
+            .then(function (issueIds) { return when.map(issueIds, client.getIssueWorkItem); })
+            .then(function (workItems) { return when.reduce(when.map(workItems, helpers.getWorkItems), function (arr, wi) { return arr = arr.concat(wi)}, []); } )
+            .then(function (workItems) { return helpers.filterWorkItemsByDate(workItems, since, till); } )
+            .then(function (workItems) { return formatWorkItems(workItems); });
+
+    var usersLoginsPromise = loggedInPromise
+        .then(client.getAllUsers.bind(client))
+        .then(function (users) { return when.map(users, helpers.getUserLogin); });
+
+    var usersFullNamesPromise = usersLoginsPromise
+            .then(function (usernames) { return when.map(usernames, client.getUser); })
+            .then(function (users) { return when.map(users, helpers.getUserFullName); });
+
+    var usersPositionsPromise = usersLoginsPromise
+            .then(function (usersLogins) { return when.map(usersLogins, client.getUserGroups); })
+            .then(function (usersGroups) { return when.map(usersGroups, helpers.getUserPosition); });
+
+    var usersInfoPromise = when.join(
+            usersLoginsPromise,
+            usersFullNamesPromise,
+            usersPositionsPromise
+        )
+        .spread(getUsersInfo);
 
     when.join(
+            req.body.project, // project ID
             projectLeadFullNamePromise,
             projectIssuesPromise,
-            projectAssigneePositionsPromise
+            usersInfoPromise,
+            workItemsPromise
         )
+        .then(getReport1Conf)
         .then(handleSuccess)
         .otherwise(handleFailure);
 };
@@ -255,8 +295,7 @@ exports.genReport2 = function (req, res) {
         .then(helpers.getUserFullName);
 
     var workItemsPromise = loggedInPromise
-        .then(client.getAllProjectIssues.bind(client, req.body.project))
-        .then(helpers.getProjectIssues)
+        .then(client.getProjectIssues.bind(client, req.body.project, since))
         .then(function (issues) { return when.map(issues, helpers.getIssueId); })
         .then(function (issueIds) { return when.map(issueIds, client.getIssueWorkItem); })
         .then(mergeWorkItems)
