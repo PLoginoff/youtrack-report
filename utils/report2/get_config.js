@@ -37,35 +37,43 @@ var getConf = function (data) {
         },
         {
             caption: "пн",
-            type:'string'
+            type:'string',
+            width: 10
         },
         {
             caption: "вт",
-            type:'string'
+            type:'string',
+            width: 10
         },
         {
             caption: "ср",
-            type:'string'
+            type:'string',
+            width: 10
         },
         {
             caption: "чт",
-            type:'string'
+            type:'string',
+            width: 10
         },
         {
             caption: "пт",
-            type:'string'
+            type:'string',
+            width: 10
         },
         {
             caption: "сб",
-            type:'string'
+            type:'string',
+            width: 10
         },
         {
             caption: "вс",
-            type:'string'
+            type:'string',
+            width: 10
         },
         {
             caption: "ИТОГО за неделю",
-            type:'string'
+            type:'string',
+            width: 30
         }
     ];
 
