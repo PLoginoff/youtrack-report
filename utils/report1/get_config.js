@@ -71,8 +71,11 @@ var getConf = function (data) {
         durations = workItems[issueId] || {};
         for (var userLogin in durations) {
             if (durations.hasOwnProperty(userLogin)) {
-                estimationTime = helpers.getIssueFieldValue(issues[i]['field'], 'Estimation');
-                spentTime = helpers.getIssueFieldValue(issues[i]['field'], 'Spent time');
+                spentTime = parseInt(helpers.getIssueFieldValue(issues[i]['field'], 'Spent time'), 10);
+                estimationTime = parseInt(helpers.getIssueFieldValue(issues[i]['field'], 'Estimation'), 10);
+                if (estimationTime < spentTime) {
+                    estimationTime = spentTime;
+                }
                 sellTime = Math.round(estimationTime * durations[userLogin] / spentTime);
 
                 conf.rows.push([
