@@ -229,7 +229,7 @@ exports.report2 = function(req, res){
                 title: 'Отчет по времени',
                 projects: result[0],
                 users: result[1],
-                since: moment().day(-1).format('DD.MM.YYYY'),
+                since: moment().day(1).format('DD.MM.YYYY'), // last Monday
                 till: moment().format('DD.MM.YYYY')
             });
         })
