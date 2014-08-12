@@ -73,7 +73,6 @@ var getConf = function (data) {
             if (durations.hasOwnProperty(userLogin)) {
                 spentTime = parseInt(helpers.getIssueFieldValue(issues[i]['field'], 'Spent time'), 10);
                 estimationTime = parseInt(helpers.getIssueFieldValue(issues[i]['field'], 'Estimation'), 10);
-                console.log('estimationTime: ' + estimationTime);
                 if (!estimationTime || estimationTime < spentTime) {
                     estimationTime = spentTime;
                 }
