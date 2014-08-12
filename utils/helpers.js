@@ -1,6 +1,16 @@
 var when = require('when');
 var moment = require('moment');
 
+exports.formatMinutes = function (minutes) {
+    var formatted = '';
+    if (minutes >= 60) {
+        formatted += Math.floor(minutes/60) + ' ч ';
+    }
+    if (minutes % 60 > 0) {
+        formatted += minutes % 60 + ' мин';
+    }
+    return formatted ? formatted : minutes;
+};
 
 /**
  *
@@ -54,7 +64,7 @@ exports.getProjectIds = function (obj) {
     if (obj && obj.projectRefs && obj.projectRefs.project) {
         projects = obj.projectRefs.project;
     }
-    
+
     for (i = 0; i < projects.length; i++) {
         projectIds.push(projects[i]['$']['id']);
     }
@@ -71,6 +81,14 @@ exports.formatProjectList = function (projects) {
     }
 
     return list;
+};
+
+exports.getUserGroupName = function (obj) {
+    var name = '';
+    if (obj && obj['$'] && obj['$']['name']) {
+        name = obj['$']['name'];
+    }
+    return name;
 };
 
 exports.getUserPosition = function (obj) {

@@ -1,6 +1,6 @@
 {
-  "name": "application-name",
-  "version": "0.0.1",
+  "name": "youtrack-report",
+  "version": "0.0.2",
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
@@ -28,5 +28,10 @@
     "nodemailer": "^0.7.0",
     "express-flash": "0.0.2",
     "moment": "^2.7.0"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-express-server": "^0.4.17",
+    "grunt-contrib-watch": "^0.6.1"
   }
 }

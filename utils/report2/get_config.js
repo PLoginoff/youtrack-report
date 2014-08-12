@@ -1,26 +1,48 @@
 var moment = require('moment');
+var formatMinutes = require('./../helpers').formatMinutes;
+var getUserLogin = require('./../helpers').getUserLogin;
+
+function getUserMinutes(workItems, userLogin) {
+    var userTime = [],
+        login,
+        date,
+        i;
+
+    for (i = 0; i < workItems.length; i++) {
+        login = getUserLogin(workItems[i]['author'][0]);
+        if (login === userLogin) {
+            date = moment.unix(Math.ceil(workItems[i]['date'][0]/1000)).format('YYYY-MM-DD');
+            if (userTime[date] === undefined) {
+                userTime[date] = 0;
+            }
+            userTime[date] += parseInt(workItems[i]['duration'][0], 10);
+        }
+    }
+
+    return userTime;
+}
 
 /**
- *
  * @param data
- *      TODO describe data format
- *
  * @returns object
  */
 var getConf = function (data) {
     var conf = {},
-        userFullName = data[0],
-        projectName = data[1],
-        dates = data[2],
-        since = moment.unix(data[3]),
-        till = moment.unix(data[4]),
+        userData = data[0],
+        projectData = data[1],
+        since = moment.unix(data[2]),
+        till = moment.unix(data[3]),
         start = since.clone(), // start of the week or the month
         end = till.clone(), // end of the week or the month
         currentDate,
         weekday,
-        weekHours,
-        dayHours,
-        row;
+        periodMinutes, // user selected period
+        weekMinutes,
+        dayMinutes,
+        weekCount,
+        userMinutes,
+        row,
+        i;
 
     conf.stylesXmlFile = "utils/report2/styles.xml";
 
@@ -28,7 +50,7 @@ var getConf = function (data) {
         {
             caption: "ФИО",
             type:'string',
-            width: 20
+            width: 50
         },
         {
             caption: "Проект",
@@ -38,37 +60,37 @@ var getConf = function (data) {
         {
             caption: "пн",
             type:'string',
-            width: 10
+            width: 12
         },
         {
             caption: "вт",
             type:'string',
-            width: 10
+            width: 12
         },
         {
             caption: "ср",
             type:'string',
-            width: 10
+            width: 12
         },
         {
             caption: "чт",
             type:'string',
-            width: 10
+            width: 12
         },
         {
             caption: "пт",
             type:'string',
-            width: 10
+            width: 12
         },
         {
             caption: "сб",
             type:'string',
-            width: 10
+            width: 12
         },
         {
             caption: "вс",
             type:'string',
-            width: 10
+            width: 12
         },
         {
             caption: "ИТОГО за неделю",
@@ -77,49 +99,62 @@ var getConf = function (data) {
         }
     ];
 
-    if (till.diff(since, 'days') > 7) {
-        start.startOf('month');
-        end.endOf('month');
-    } else {
-        start.startOf('week');
-        end.endOf('week');
-    }
-
     conf.rows = [];
 
-    currentDate = moment.unix(since.format('X'));
-    while (currentDate.diff(end, 'days') <= 0) {
-        row = [];
-        if (conf.rows.length === 0) {
-            row.push(userFullName);
-            row.push(projectName);
-        } else {
-            row.push(null);
-            row.push(null);
-        }
-        weekday = 1;
-        weekHours = 0;
-        dayHours = null;
-        while (weekday <= 7) {
-            if (currentDate.weekday() === weekday % 7) {
-                if (currentDate.diff(since, 'days') >= 0 && currentDate.diff(till, 'days') <= 0) {
-                    dayHours = dates[currentDate.format('YYYY-MM-DD')] || 0;
-                    weekHours += dayHours;
-                    row.push(dayHours);
-                } else {
-                    row.push(null);
-                }
-                currentDate.add(1, 'day');
-            } else {
+    for (var projectId in projectData) {
+        for (var userLogin in userData) {
+            conf.rows.push([userData[userLogin], projectData[projectId].nam, null, null, null, null, null, null, null, null]);
+            conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
+
+            weekCount = 1;
+            userMinutes = getUserMinutes(projectData[projectId].workItems, userLogin);
+            periodMinutes = 0;
+            start.startOf('week');
+            end.endOf('week');
+            currentDate = moment.unix(since.format('X'));
+
+            while (currentDate.diff(end, 'days') <= 0) {
+                row = [];
+                row.push(weekCount + ' неделя (' + currentDate.format('DD.MM.YYYY'));
                 row.push(null);
+                weekday = 1;
+                weekMinutes = 0;
+                dayMinutes = null;
+                while (weekday <= 7) {
+                    if (currentDate.weekday() === weekday % 7) {
+                        if (currentDate.diff(since, 'days') >= 0 && currentDate.diff(till, 'days') <= 0) {
+                            dayMinutes = userMinutes[currentDate.format('YYYY-MM-DD')] || 0;
+                            weekMinutes += dayMinutes;
+                            row.push(formatMinutes(dayMinutes));
+                        } else {
+                            row.push(null);
+                        }
+                        currentDate.add(1, 'day');
+                    } else {
+                        row.push(null);
+                    }
+                    weekday += 1;
+                }
+                row[0] += ' - ' + currentDate.format('DD.MM.YYYY') + ')';
+                row.push(dayMinutes !== null ? formatMinutes(weekMinutes) : null);
+                conf.rows.push(row);
+                weekCount += 1;
+                periodMinutes += weekMinutes;
             }
-            weekday += 1;
+
+            conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
+            conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
+            conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
+            conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
+            conf.rows.push(["Дата выгрузки", moment().format('DD.MM.YYYY'), null, null, null, null, null, null, null, null]);
+            conf.rows.push(["Период выгрузки", since.format('DD.MM.YYYY') + ' - ' + till.format('DD.MM.YYYY'), null, null, null, null, null, null, null, null]);
+            conf.rows.push(["Итого за период", formatMinutes(periodMinutes), null, null, null, null, null, null, null, null]);
+            conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
+            conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
+            conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
+            conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
         }
-        row.push(dayHours !== null ? weekHours : null);
-        conf.rows.push(row);
     }
-    conf.rows.push(["Дата выгрузки", moment().format('DD.MM.YYYY'), null, null, null, null, null, null, null, null]);
-    conf.rows.push(["Период выгрузки", since.format('DD.MM.YYYY') + ' - ' + till.format('DD.MM.YYYY'), null, null, null, null, null, null, null, null]);
 
     return conf;
 };

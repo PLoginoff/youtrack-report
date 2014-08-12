@@ -3,6 +3,7 @@ var flash = require('express-flash');
 var YouTrackClient = require('./../utils/youtrack');
 var config = require('./../config');
 var when = require('when');
+var keys = require('when/keys');
 var excel = require('excel-export');
 var moment = require('moment');
 var getReport1Conf = require('./../utils/report1/get_config');
@@ -157,7 +158,7 @@ exports.genReport1 = function (req, res) {
     var workItemsPromise = projectIssuesPromise
             .then(function (issues) { return when.map(issues, helpers.getIssueId); })
             .then(function (issueIds) { return when.map(issueIds, client.getIssueWorkItem); })
-            .then(function (workItems) { return when.reduce(when.map(workItems, helpers.getWorkItems), function (arr, wi) { return arr = arr.concat(wi)}, []); } )
+            .then(function (workItems) { return when.reduce(when.map(workItems, helpers.getWorkItems), function (arr, wi) { return arr.concat(wi); }, []); } )
             .then(function (workItems) { return helpers.filterWorkItemsByDate(workItems, since, till); } )
             .then(function (workItems) { return formatWorkItems(workItems); });
 
@@ -241,28 +242,31 @@ exports.report2 = function(req, res){
 };
 
 exports.genReport2 = function (req, res) {
-    if (!req.body.project.trim() || !req.body.user.trim() || !req.body.since.trim() || !req.body.till.trim()) {
+    var since = req.body.since ? req.body.since.trim() : null,
+        till = req.body.till ? req.body.till.trim() : null,
+        projectIds = req.body.projects,
+        userLogins = req.body.users,
+        projectData = {},
+        userData = {},
+        i;
+
+    if (!projectIds || !userLogins || !since || !till) {
         req.flash('error', 'Не заполнены обязательные поля, отмеченные звездочкой *');
         res.redirect('report/2');
         return;
     }
 
-    function formatWorkItems (workItems) {
-        var i, dates = {}, d;
-        for (i = 0; i < workItems.length; i++) {
-            d = moment.unix(Math.ceil(workItems[i]['date'][0]/1000)).format('YYYY-MM-DD');
-            if (dates[d] === undefined) {
-                dates[d] = 0;
-            }
-            dates[d] += parseInt(workItems[i]['duration'][0], 10);
-        }
-        return dates;
+    if (typeof projectIds === 'string') {
+        projectIds = [projectIds];
+    }
+    if (typeof userLogins === 'string') {
+        userLogins = [userLogins];
     }
 
     function mergeWorkItems(workItems) {
         return when.reduce(
             when.map(workItems, helpers.getWorkItems),
-            function (arr, wi) { return arr = arr.concat(wi)},
+            function (arr, wi) { return  arr.concat(wi); },
             []
         );
     }
@@ -281,33 +285,41 @@ exports.genReport2 = function (req, res) {
         res.redirect('/report/2');
     }
 
+    function getMapper(mapper) {
+        return function (array) {
+            return when.map(array, mapper);
+        };
+    }
+
+    since = helpers.getUnixTimestamp(since);
+    till = helpers.getUnixTimestamp(till);
+
     var client = new YouTrackClient(config.YOUTRACK_HOST);
-
     var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
-    var since = helpers.getUnixTimestamp(req.body.since);
-    var till = helpers.getUnixTimestamp(req.body.till);
 
-    var projectNamePromise = loggedInPromise
-        .then(client.getProject.bind(client, req.body.project))
-        .then(helpers.getProjectName);
+    for (i = 0; i < userLogins.length; i++) {
+        userData[userLogins[i]] = loggedInPromise
+            .then(client.getUser.bind(client, userLogins[i]))
+            .then(helpers.getUserFullName);
+    }
 
-    var userFullNamePromise = loggedInPromise
-        .then(client.getUser.bind(client,req.body.user))
-        .then(helpers.getUserFullName);
-
-    var workItemsPromise = loggedInPromise
-        .then(client.getProjectIssues.bind(client, req.body.project, since))
-        .then(function (issues) { return when.map(issues, helpers.getIssueId); })
-        .then(function (issueIds) { return when.map(issueIds, client.getIssueWorkItem); })
-        .then(mergeWorkItems)
-        .then(function (workItems) { return helpers.filterWorkItemsByUserLogin(workItems, req.body.user); })
-        .then(function (workItems) { return helpers.filterWorkItemsByDate(workItems, since, till); } )
-        .then(formatWorkItems);
+    for (i = 0; i < projectIds.length; i++) {
+        projectData[projectIds[i]] = keys.all({
+            name: loggedInPromise
+                .then(client.getProject.bind(client, projectIds[i]))
+                .then(helpers.getProjectName),
+            workItems: loggedInPromise
+                .then(client.getProjectIssues.bind(client, projectIds[i], since))
+                .then(getMapper.call(null, helpers.getIssueId))
+                .then(getMapper.call(null, client.getIssueWorkItem))
+                .then(mergeWorkItems)
+                .then(function (workItems) { return helpers.filterWorkItemsByDate(workItems, since, till); } )
+        });
+    }
 
     when.join(
-            projectNamePromise,
-            userFullNamePromise,
-            workItemsPromise,
+            keys.all(userData),
+            keys.all(projectData),
             since,
             till
         )

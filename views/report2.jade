@@ -11,7 +11,7 @@ block content
       .form-row
         label.control-label Название проекта
           span.text-danger *
-        select.form-control(name="project")
+        select.form-control(name="projects", multiple)
           option(value="")
           - if (projects)
             - each proj in projects
@@ -20,7 +20,7 @@ block content
       .form-row
         label.control-label Пользователь
           span.text-danger *
-        select.form-control(name="user")
+        select.form-control(name="users", multiple)
           option(value="")
           - if (users)
             - each user in users
