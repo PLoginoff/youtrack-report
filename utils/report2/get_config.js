@@ -103,7 +103,7 @@ var getConf = function (data) {
 
     for (var projectId in projectData) {
         for (var userLogin in userData) {
-            conf.rows.push([userData[userLogin], projectData[projectId].nam, null, null, null, null, null, null, null, null]);
+            conf.rows.push([userData[userLogin], projectData[projectId].name, null, null, null, null, null, null, null, null]);
             conf.rows.push([null, null, null, null, null, null, null, null, null, null]);
 
             weekCount = 1;
