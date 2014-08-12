@@ -6,26 +6,31 @@ block content
     p.help-block
       span.text-danger *
       span &nbsp;&mdash; обязательные поля
+    p.help-block
+      span Для выбора нескольких проектов/пользователей зажмите Ctrl
     br
     form.form-horizontal(method="POST")
-      .form-row
-        label.control-label Название проекта
-          span.text-danger *
-        select.form-control(name="projects", multiple)
-          option(value="")
-          - if (projects)
-            - each proj in projects
-              option(value="#{proj.id}")
-                = proj.name
-      .form-row
-        label.control-label Пользователь
-          span.text-danger *
-        select.form-control(name="users", multiple)
-          option(value="")
-          - if (users)
-            - each user in users
-              option(value="#{user.login}")
-                = user.fullname
+      .row
+        .col-lg-6
+          .form-row
+            label.control-label Название проекта
+              span.text-danger *
+            select.form-control(name="projects", multiple, style="height:450px;")
+              option(value="")
+              - if (projects)
+                - each proj in projects
+                  option(value="#{proj.id}")
+                    = proj.name
+        .col-lg-6
+          .form-row
+            label.control-label Пользователь
+              span.text-danger *
+            select.form-control(name="users", multiple, style="height:450px;")
+              option(value="")
+              - if (users)
+                - each user in users
+                  option(value="#{user.login}")
+                    = user.fullname
       .row
         .col-lg-6
           .form-row
