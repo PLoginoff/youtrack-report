@@ -10,6 +10,8 @@ function addEmailField() {
 
 $('.add-btn').click(addEmailField);
 
-$('.datepicker').datepicker({
-    format: 'dd.mm.yyyy'
+$('.datepicker').datetimepicker({
+    direction: 'auto',
+    language: 'ru',
+    pickTime: false
 });

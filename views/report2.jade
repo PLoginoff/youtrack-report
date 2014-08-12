@@ -13,7 +13,7 @@ block content
       .row
         .col-lg-6
           .form-row
-            label.control-label Название проекта
+            label.control-label Проекты
               span.text-danger *
             select.form-control(name="projects", multiple, style="height:450px;")
               option(value="")
@@ -23,7 +23,7 @@ block content
                     = proj.name
         .col-lg-6
           .form-row
-            label.control-label Пользователь
+            label.control-label Пользователи
               span.text-danger *
             select.form-control(name="users", multiple, style="height:450px;")
               option(value="")
@@ -36,12 +36,18 @@ block content
           .form-row
             label.control-label Начало периода выгрузки
               span.text-danger *
-            input.form-control.datepicker(type="text", name="since", value="#{since}")
+            .input-group.datepicker
+              input.form-control(type="text", name="since", value="#{since}")
+              span.input-group-addon
+                span.glyphicon.glyphicon-calendar
         .col-lg-6
           .form-row
             label.control-label Окончание периода выгрузки
               span.text-danger *
-            input.form-control.datepicker(type="text", name="till", value="#{till}")
+            .input-group.datepicker
+              input.form-control.datepicker(type="text", name="till", value="#{till}")
+              span.input-group-addon
+                span.glyphicon.glyphicon-calendar
       .form-row
         -if (messages.error)
           .alert.alert-danger= messages.error

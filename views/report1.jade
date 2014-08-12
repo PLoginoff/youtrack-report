@@ -24,11 +24,17 @@ block content
         .col-lg-6
           .form-row
             label.control-label Дата начала выгрузки
-            input.form-control.datepicker(type="text", name="since")
+            .input-group.datepicker
+              input.form-control(type="text", name="since")
+              span.input-group-addon
+                span.glyphicon.glyphicon-calendar
         .col-lg-6
           .form-row
             label.control-label Дата окончания выгрузки
-            input.form-control.datepicker(type="text", name="till")
+            .input-group.datepicker
+              input.form-control(type="text", name="till")
+              span.input-group-addon
+                span.glyphicon.glyphicon-calendar
       //
           .row
             .col-lg-11
