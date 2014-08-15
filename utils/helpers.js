@@ -28,6 +28,18 @@ exports.getUnixTimestamp = function (date) {
     return timestamp;
 };
 
+exports.getMomentDate = function (string) {
+    var format;
+
+    if (/\d{2}\.\d{2}\.\d{4}/.test(string) === false) {
+        return false;
+    }
+
+    format = string.split('.').reverse().join('-');
+
+    return moment(format);
+};
+
 // TODO use it as helper in other functions, don't export it
 exports.getPropertyValue = function (obj, objName, propName) {
     var propValue = '';

@@ -122,7 +122,7 @@ var getConf = function (data) {
                 dayMinutes = null;
                 while (weekday <= 7) {
                     if (currentDate.weekday() === weekday % 7) {
-                        if (currentDate.diff(since, 'days') >= 0 && currentDate.diff(till, 'days') <= 0) {
+                        if (currentDate.startOf('day').diff(since, 'days') >= 0 && currentDate.endOf('day').diff(till, 'days') <= 0) {
                             dayMinutes = userMinutes[currentDate.format('YYYY-MM-DD')] || 0;
                             weekMinutes += dayMinutes;
                             row.push(formatMinutes(dayMinutes));

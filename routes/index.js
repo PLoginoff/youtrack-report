@@ -136,10 +136,12 @@ exports.genReport1 = function (req, res) {
         res.redirect('/report/1');
     }
 
-    // Unix Timestamps
-    var since = req.body.since ? helpers.getUnixTimestamp(req.body.since) : 0;
-    // TODO refactor
-    var till = req.body.till ? helpers.getUnixTimestamp(req.body.till) + 86400 : moment().format('X');
+    var since = helpers.getMomentDate(req.body.since);
+    var till = helpers.getMomentDate(req.body.till);
+
+    // Turn moment dates to unix timestamps
+    since = since ? since.startOf('day').unix('X') : 0;
+    till = till ? till.endOf('day').unix('X') : moment().endOf('day').unix('X');
 
     var client = new YouTrackClient(config.YOUTRACK_HOST);
 
@@ -242,8 +244,8 @@ exports.report2 = function(req, res){
 };
 
 exports.genReport2 = function (req, res) {
-    var since = req.body.since ? req.body.since.trim() : null,
-        till = req.body.till ? req.body.till.trim() : null,
+    var since = helpers.getMomentDate(req.body.since),
+        till = helpers.getMomentDate(req.body.till),
         projectIds = req.body.projects,
         userLogins = req.body.users,
         projectData = {},
@@ -291,8 +293,9 @@ exports.genReport2 = function (req, res) {
         };
     }
 
-    since = helpers.getUnixTimestamp(since);
-    till = helpers.getUnixTimestamp(till);
+    // Turn moment dates into unix timestamps
+    since = since.startOf('day').format('X');
+    till = till.endOf('day').format('X');
 
     var client = new YouTrackClient(config.YOUTRACK_HOST);
     var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
