@@ -132,6 +132,7 @@ exports.genReport1 = function (req, res) {
 
     function handleSuccess(config) {
         var report = excel.execute(config);
+        res.cookie('downloaded', 1, {maxAge: 1000});
         res.setHeader('Content-Type', 'application/vnd.openxmlformats');
         res.setHeader("Content-Disposition", "attachment; filename=" + "Report by project.xlsx");
         res.end(report, 'binary');
@@ -283,6 +284,7 @@ exports.genReport2 = function (req, res) {
     function handleSuccess(config) {
         var report = excel.execute(config);
 
+        res.cookie('downloaded', 1, {maxAge: 1000});
         res.setHeader('Content-Type', 'application/vnd.openxmlformats');
         res.setHeader("Content-Disposition", "attachment; filename=" + "Report by time.xlsx");
         res.end(report, 'binary');
@@ -365,7 +367,7 @@ exports.genReport3 = function (req, res) {
 
     if (!project) {
         req.flash('error', 'Не заполнены обязательные поля, отмеченные звездочкой *');
-        res.redirect('report/2');
+        res.redirect('report/3');
         return;
     }
 
@@ -391,7 +393,7 @@ exports.genReport3 = function (req, res) {
     function handleFailure(err) {
         console.log(err);
         req.flash('error', err);
-        res.redirect('/report/2');
+        res.redirect('/report/3');
     }
 
     function handleSuccess() {
@@ -405,9 +407,10 @@ exports.genReport3 = function (req, res) {
                 handleFailure("Error: unknown");
             }
             fs.readFileAsync(filename[0]).done(function (buffer) {
+                res.cookie('downloaded', 1, {maxAge: 1000});
                 res.writeHead(200, {
                   "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                  "Content-Disposition": "attachment;filename='Report for accounts department (" + today + ").xlsx'"
+                  "Content-Disposition": "attachment;filename='Report for accounts department (" + project + "-" + today + ").xlsx'"
                 });
                 res.end(buffer);
             });

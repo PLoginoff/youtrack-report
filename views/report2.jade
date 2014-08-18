@@ -51,6 +51,6 @@ block content
       .form-row
         -if (messages.error)
           .alert.alert-danger= messages.error
-        button.btn.btn-success(type="submit") Создать
+        button.btn.btn-success.submit(type="submit", data-loading-text="Подождите...") Создать
         i &nbsp;&nbsp;
         a(href="/").btn.btn-default Назад
