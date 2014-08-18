@@ -1,0 +1,13 @@
+{
+    "name": "engage360d/report",
+    "description": "YouTrack-report",
+    "authors": [
+        {
+            "name": "AliochaRyzhkov",
+            "email": "alioch@yandex.ru"
+        }
+    ],
+    "require": {
+        "phpoffice/phpexcel": "1.8.0"
+    }
+}

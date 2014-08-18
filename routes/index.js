@@ -10,6 +10,13 @@ var getReport1Conf = require('./../utils/report1/get_config');
 var getReport2Conf = require('./../utils/report2/get_config');
 var helpers = require('./../utils/helpers');
 var nodemailer = require('nodemailer');
+var fs = require('fs');
+var node = require('when/node');
+var promisedFs = node.liftAll(fs, function(promisedFs, liftedFunc, name) {
+    promisedFs[name + 'Async'] = liftedFunc;
+    return promisedFs;
+}, fs);
+var exec = require('child_process').exec;
 
 exports.index = function(req, res){
     res.render('index', { title: 'Ahoy!' });
@@ -330,3 +337,230 @@ exports.genReport2 = function (req, res) {
         .then(handleSuccess)
         .otherwise(handleFailure);
 };
+
+
+exports.report3 = function(req, res){
+    var client = new YouTrackClient(config.YOUTRACK_HOST);
+
+    when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD))
+        .then(client.getAllProjects)
+        .then(helpers.getProjectIds)
+        .then(client.getProjectList.bind(client))
+        .then(helpers.formatProjectList)
+        .then(function (projects) {
+            res.render('report3', {
+                title: 'Отчет по проектам',
+                projects: projects}
+            );
+        })
+        .otherwise(function (err) {
+            req.flash('error', err);
+            res.render('report3');
+        });
+};
+
+exports.genReport3 = function (req, res) {
+    var today = moment().format('DD.MM.YYYY'),
+        project = req.body.project;
+
+    if (!project) {
+        req.flash('error', 'Не заполнены обязательные поля, отмеченные звездочкой *');
+        res.redirect('report/2');
+        return;
+    }
+
+
+    var projectData = {
+            projectId: project,
+            projectName: '',
+            currentDate: moment().format('DD/MM/YYYY'),
+            projectLeadLogin: '',
+            firstIssueDate: '',
+            lastIssueDate: '',
+            projectDescription: '',
+            users: {},
+            timeInfo: {
+                bySubsystem: {},
+                byUserPosition: {},
+                byUserLogin: {},
+                byIssueType: {},
+                total: 0
+            }
+        };
+
+    function handleFailure(err) {
+        console.log(err);
+        req.flash('error', err);
+        res.redirect('/report/2');
+    }
+
+    function handleSuccess() {
+        var child, filename;
+        child = exec("php -f excel/report3.php", function (error, stdout, stderror) {
+            if (stderror) {
+              handleFailure(stderror);
+            }
+            filename = stdout.match(/[^ :]+\.xlsx$/);
+            if (!filename) {
+                handleFailure("Error: unknown");
+            }
+            fs.readFileAsync(filename[0]).done(function (buffer) {
+                res.writeHead(200, {
+                  "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                  "Content-Disposition": "attachment;filename='Report for accounts department (" + today + ").xlsx'"
+                });
+                res.end(buffer);
+            });
+        });
+        child.stdin.write(JSON.stringify(projectData));
+        child.stdin.end();
+    }
+
+    function fillInProjectData(project) {
+        projectData.projectName = helpers.getProjectName(project);
+        projectData.projectLeadLogin = helpers.getProjectLeadUsername(project);
+        projectData.projectDescription = helpers.getProjectDescription(project);
+    }
+
+    function fillInUserData(logins, fullNames, positions) {
+        var i;
+        for (i = 0; i < logins.length; i++) {
+            projectData.users[logins[i]] = {
+                fullName: fullNames[i],
+                position: positions[i]
+            };
+        }
+    }
+
+    function fillInTimeData(issues, ids, workItems) {
+        var timeInfo,
+            issueId,
+            issueWorkItems,
+            subsystem,
+            userPosition,
+            userLogin,
+            issueType,
+            total,
+            spentTime,
+            i,
+            j;
+
+        timeInfo = projectData.timeInfo;
+
+        for (i = 0; i < issues.length; i++) {
+            issueId = ids[i];
+            issueWorkItems = workItems[i] ? helpers.getWorkItems(workItems[i]) : [];
+
+            subsystem = helpers.getIssueFieldValue(issues[i]['field'], 'Subsystem');
+            if (!subsystem) {
+                subsystem = 'nosubsystem';
+            }
+
+            issueType = helpers.getIssueFieldValue(issues[i]['field'], 'Type');
+            if (!issueType) {
+                issueType = 'undefined';
+            }
+
+            // Note, parent issues has no work items,
+            // so subsystem and issueType we must calculate in this loop
+            for (j = 0; j < issueWorkItems.length; j++) {
+                userLogin = helpers.getUserLogin(issueWorkItems[j]['author'][0]);
+                userPosition = projectData.users[userLogin]['position'];
+                userName = projectData.users[userLogin]['fullName'];
+                spentTime = parseInt(issueWorkItems[j]['duration'][0], 10);
+                if (spentTime) {
+                    if (timeInfo['bySubsystem'][subsystem] === undefined) {
+                        timeInfo['bySubsystem'][subsystem] = {total: 0};
+                    }
+                    if (timeInfo['bySubsystem'][subsystem][userPosition] === undefined) {
+                        timeInfo['bySubsystem'][subsystem][userPosition] = {total: 0};
+                    }
+                    if (timeInfo['bySubsystem'][subsystem][userPosition][userName] === undefined) {
+                        timeInfo['bySubsystem'][subsystem][userPosition][userName] = {total: 0};
+                    }
+                    if (timeInfo['bySubsystem'][subsystem][userPosition][userName][issueType] === undefined) {
+                        timeInfo['bySubsystem'][subsystem][userPosition][userName][issueType] = 0;
+                    }
+                    if (timeInfo['byIssueType'][issueType] === undefined) {
+                        timeInfo['byIssueType'][issueType] = 0;
+                    }
+                    if (timeInfo['byUserLogin'][userName] === undefined) {
+                        timeInfo['byUserLogin'][userName] = 0;
+                    }
+                    if (timeInfo['byUserPosition'][userPosition] === undefined) {
+                        timeInfo['byUserPosition'][userPosition] = 0;
+                    }
+                    if (timeInfo['total'] === undefined) {
+                        timeInfo['total'] = 0;
+                    }
+                    timeInfo['bySubsystem'][subsystem]['total'] += spentTime;
+                    timeInfo['bySubsystem'][subsystem][userPosition]['total'] += spentTime;
+                    timeInfo['bySubsystem'][subsystem][userPosition][userName]['total'] += spentTime;
+                    timeInfo['bySubsystem'][subsystem][userPosition][userName][issueType] += spentTime;
+                    timeInfo['byIssueType'][issueType] += spentTime;
+                    timeInfo['byUserLogin'][userName] += spentTime;
+                    timeInfo['byUserPosition'][userPosition] += spentTime;
+                    timeInfo['total'] += spentTime;
+                }
+            }
+
+            if (i === 0 || i === issues.length - 1) {
+              projectData[i === 0 ? 'firstIssueDate' : 'lastIssueDate'] = moment.unix(
+                    helpers.getIssueFieldValue(issues[i]['field'], 'created') / 1000
+                ).format('DD/MM/YYYY');
+            }
+        }
+    }
+
+    var client = new YouTrackClient(config.YOUTRACK_HOST);
+    var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
+
+    loggedInPromise
+        .then(client.getProject.bind(client, req.body.project))
+        .then(fillInProjectData);
+
+    /** */
+
+    var userLoginsPromise = loggedInPromise
+            .then(client.getAllUsers.bind(client))
+            .then(function (users) { return when.map(users, helpers.getUserLogin); });
+
+    var userFullNamesPromise = userLoginsPromise
+            .then(function (logins) { return when.map(logins, client.getUser); })
+            .then(function (users) { return when.map(users, helpers.getUserFullName); });
+
+    var userPositionsPromise = userLoginsPromise
+            .then(function (logins) { return when.map(logins, client.getUserGroups); })
+            .then(function (groups) { return when.map(groups, helpers.getUserPosition); });
+
+    /** */
+
+    var projectIssuesPromise = loggedInPromise
+        .then(client.getProjectIssues.bind(client, req.body.project));
+
+    var projectIssuesIdsPromise = projectIssuesPromise
+        .then(function (issues) { return when.map(issues, helpers.getIssueId); });
+
+    var workItemsPromise = projectIssuesIdsPromise
+        .then(function (issueIds) { return when.map(issueIds, client.getIssueWorkItem); });
+
+    var usersDataPromise = when.join(
+            userLoginsPromise,
+            userFullNamesPromise,
+            userPositionsPromise
+        );
+
+    var timeInfoPromise = when.join(
+            projectIssuesPromise,
+            projectIssuesIdsPromise,
+            workItemsPromise
+        );
+
+    usersDataPromise
+        .spread(fillInUserData)
+        .yield(timeInfoPromise)
+        .spread(fillInTimeData)
+        .then(handleSuccess)
+        .otherwise(handleFailure);
+};
+

@@ -1,0 +1,27 @@
+extends layout
+
+block content
+  .container.well
+    h2 Итоговый отчет по проектам для бухгалтерии
+    p.help-block.
+      Выберите название проекта
+    p.help-block
+      span.text-danger *
+      span &nbsp;&mdash; обязательные поля
+    br
+    form.form-horizontal(method="POST")
+      .form-row
+        label.control-label Название проекта
+        span.text-danger *
+        select.form-control(name="project")
+          option(value="")
+          - if (projects)
+            - each proj in projects
+              option(value="#{proj.id}")
+                = proj.name
+      .form-row
+        -if (messages.error)
+          .alert.alert-danger= messages.error
+        button.btn.btn-success(type="submit") Создать
+        i &nbsp;&nbsp;
+        a(href="/").btn.btn-default Назад

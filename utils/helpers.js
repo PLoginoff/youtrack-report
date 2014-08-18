@@ -298,6 +298,16 @@ exports.getProjectName = function (obj) {
     return name;
 };
 
+exports.getProjectDescription = function (obj) {
+    var description = '';
+
+    if (obj && obj['project'] && obj['project']['$'] && obj['project']['$']['description']) {
+        description = obj['project']['$']['description'];
+    }
+
+    return description;
+};
+
 exports.getProjectIssues = function (obj) {
     var issues = [];
 
