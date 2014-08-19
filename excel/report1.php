@@ -82,8 +82,8 @@ foreach ($data['issues'] as $issue) {
 
 $spreadsheet->getActiveSheet()
     ->setCellValue('A' . $currentRowIndex, 'ИТОГО')
-    ->setCellValue('E' . $currentRowIndex, formatMinutes($sellTimeTotal))
-    ->setCellValue('F' . $currentRowIndex, formatMinutes($actualTimeTotal))
+    ->setCellValue('F' . $currentRowIndex, formatMinutes($sellTimeTotal))
+    ->setCellValue('G' . $currentRowIndex, formatMinutes($actualTimeTotal))
 ;
 
 if (!is_dir('/tmp/youtrack-report')) {
