@@ -6,7 +6,6 @@ var when = require('when');
 var keys = require('when/keys');
 var excel = require('excel-export');
 var moment = require('moment');
-var getReport1Conf = require('./../utils/report1/get_config');
 var getReport2Conf = require('./../utils/report2/get_config');
 var helpers = require('./../utils/helpers');
 var nodemailer = require('nodemailer');
