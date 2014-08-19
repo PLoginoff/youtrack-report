@@ -362,20 +362,12 @@ exports.report3 = function(req, res){
 };
 
 exports.genReport3 = function (req, res) {
-    var today = moment().format('DD.MM.YYYY'),
-        project = req.body.project;
-
-    if (!project) {
-        req.flash('error', 'Не заполнены обязательные поля, отмеченные звездочкой *');
-        res.redirect('report/3');
-        return;
-    }
-
-
-    var projectData = {
+    var currentDate = moment().format('DD/MM/YYYY'),
+        project = req.body.project,
+        projectData = {
             projectId: project,
             projectName: '',
-            currentDate: moment().format('DD/MM/YYYY'),
+            currentDate: currentDate,
             projectLeadLogin: '',
             firstIssueDate: '',
             lastIssueDate: '',
@@ -389,6 +381,12 @@ exports.genReport3 = function (req, res) {
                 total: 0
             }
         };
+
+    if (!project) {
+        req.flash('error', 'Не заполнены обязательные поля, отмеченные звездочкой *');
+        res.redirect('report/3');
+        return;
+    }
 
     function handleFailure(err) {
         console.log(err);
@@ -410,7 +408,7 @@ exports.genReport3 = function (req, res) {
                 res.cookie('downloaded', 1, {maxAge: 1000});
                 res.writeHead(200, {
                   "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                  "Content-Disposition": "attachment;filename='Report for accounts department (" + project + "-" + today + ").xlsx'"
+                  "Content-Disposition": "attachment;filename='Report for accounts department (" + project + "-" + currentDate + ").xlsx'"
                 });
                 res.end(buffer);
             });
@@ -518,10 +516,6 @@ exports.genReport3 = function (req, res) {
     var client = new YouTrackClient(config.YOUTRACK_HOST);
     var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
 
-    loggedInPromise
-        .then(client.getProject.bind(client, req.body.project))
-        .then(fillInProjectData);
-
     /** */
 
     var userLoginsPromise = loggedInPromise
@@ -547,6 +541,8 @@ exports.genReport3 = function (req, res) {
     var workItemsPromise = projectIssuesIdsPromise
         .then(function (issueIds) { return when.map(issueIds, client.getIssueWorkItem); });
 
+    /** */
+
     var usersDataPromise = when.join(
             userLoginsPromise,
             userFullNamesPromise,
@@ -559,7 +555,10 @@ exports.genReport3 = function (req, res) {
             workItemsPromise
         );
 
-    usersDataPromise
+    loggedInPromise
+        .then(client.getProject.bind(client, req.body.project))
+        .then(fillInProjectData)
+        .yield(usersDataPromise)
         .spread(fillInUserData)
         .yield(timeInfoPromise)
         .spread(fillInTimeData)
