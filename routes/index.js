@@ -138,7 +138,7 @@ exports.genReport1 = function (req, res) {
     }
 
     function fillInProjectData(projectName, projectLeadName, issues, usersInfo, workItems) {
-        var i, issueId, durations, sellTime;
+        var i, issueId, durations, sellTime, jobNumber;
 
         projectData.projectLeadName = projectLeadName;
         projectData.projectName = projectName;
@@ -155,8 +155,13 @@ exports.genReport1 = function (req, res) {
                     }
                     sellTime = Math.round(estimationTime * durations[userLogin] / spentTime);
 
+                    jobNumber = helpers.getJobNumberFieldValue(issues[i]['field']);
+                    if (jobNumber && typeof jobNumber === 'object') {
+                        jobNumber = jobNumber[0];
+                    }
                     projectData.issues.push({
                         issueId: issueId,
+                        jobNumber: jobNumber,
                         issueSummary: helpers.sanitizeValue(helpers.getIssueFieldValue(issues[i]['field'], 'summary') + ''),
                         asigneeFullName: usersInfo[userLogin]['fullName'],
                         asigneePosition: usersInfo[userLogin]['position'] || '',

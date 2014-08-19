@@ -68,6 +68,23 @@ exports.getIssueFieldValue = getIssueFieldValue = function (fields, fieldName) {
     return value;
 };
 
+exports.getJobNumberFieldValue = function (fields) {
+    var i, value = '';
+
+    if (!fields) {
+        return '';
+    }
+
+    for (i = 0; i < fields.length; i++) {
+        if (fields[i] && fields[i]['$'] && fields[i]['$']['name'] && fields[i]['$']['name'].indexOf('Job Number') != -1) {
+            value = fields[i]['value'];
+            break;
+        }
+    }
+
+    return value;
+};
+
 exports.getProjectIds = function (obj) {
     var projects = [],
         projectIds = [],

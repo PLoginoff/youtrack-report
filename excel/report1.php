@@ -28,18 +28,21 @@ $spreadsheet->getActiveSheet()
     ->setCellValue('C4', 'Руководитель проекта:')
     ->setCellValue('G4', $data['projectLeadName'])
     ->setCellValue('A5', 'Номер таска')
-    ->setCellValue('B5', 'Наименование работы')
-    ->setCellValue('C5', 'Исполнитель')
-    ->setCellValue('D5', 'Должность')
-    ->setCellValue('E5', 'Время продажи')
-    ->setCellValue('F5', 'Затраченное время')
+    ->setCellValue('B5', 'Job Number')
+    ->setCellValue('C5', 'Наименование работы')
+    ->setCellValue('D5', 'Исполнитель')
+    ->setCellValue('E5', 'Должность')
+    ->setCellValue('F5', 'Время продажи')
+    ->setCellValue('G5', 'Затраченное время')
     ;
 
-$spreadsheet->getActiveSheet()->getColumnDimension('B')->setWidth(43.42578125);
-$spreadsheet->getActiveSheet()->getColumnDimension('C')->setWidth(21.7109375);
-$spreadsheet->getActiveSheet()->getColumnDimension('D')->setWidth(18.7109375);
+$spreadsheet->getActiveSheet()->getColumnDimension('A')->setWidth(18);
+$spreadsheet->getActiveSheet()->getColumnDimension('B')->setWidth(20);
+$spreadsheet->getActiveSheet()->getColumnDimension('C')->setWidth(43.42578125);
+$spreadsheet->getActiveSheet()->getColumnDimension('D')->setWidth(21.7109375);
 $spreadsheet->getActiveSheet()->getColumnDimension('E')->setWidth(18.7109375);
-$spreadsheet->getActiveSheet()->getColumnDimension('F')->setWidth(18.5703125);
+$spreadsheet->getActiveSheet()->getColumnDimension('F')->setWidth(18.7109375);
+$spreadsheet->getActiveSheet()->getColumnDimension('G')->setWidth(18.5703125);
 
 $spreadsheet->getActiveSheet()->getRowDimension('1')->setRowHeight(23.25);
 $spreadsheet->getActiveSheet()->getRowDimension('5')->setRowHeight(30);
@@ -63,11 +66,12 @@ $currentRowIndex = 6;
 foreach ($data['issues'] as $issue) {
     $spreadsheet->getActiveSheet()
         ->setCellValue('A' . $currentRowIndex, $issue['issueId'])
-        ->setCellValue('B' . $currentRowIndex, $issue['issueSummary'])
-        ->setCellValue('C' . $currentRowIndex, $issue['asigneeFullName'])
-        ->setCellValue('D' . $currentRowIndex, $issue['asigneePosition'])
-        ->setCellValue('E' . $currentRowIndex, formatMinutes($issue['sellTime']))
-        ->setCellValue('F' . $currentRowIndex, formatMinutes($issue['actualTime']))
+        ->setCellValue('B' . $currentRowIndex, $issue['jobNumber'])
+        ->setCellValue('C' . $currentRowIndex, $issue['issueSummary'])
+        ->setCellValue('D' . $currentRowIndex, $issue['asigneeFullName'])
+        ->setCellValue('E' . $currentRowIndex, $issue['asigneePosition'])
+        ->setCellValue('F' . $currentRowIndex, formatMinutes($issue['sellTime']))
+        ->setCellValue('G' . $currentRowIndex, formatMinutes($issue['actualTime']))
     ;
 
     $sellTimeTotal += $issue['sellTime'];
