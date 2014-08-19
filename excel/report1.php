@@ -81,7 +81,7 @@ foreach ($data['issues'] as $issue) {
 }
 
 $spreadsheet->getActiveSheet()
-    ->setCellValue('A' . $currentRowIndex, 'Итого')
+    ->setCellValue('A' . $currentRowIndex, 'ИТОГО')
     ->setCellValue('E' . $currentRowIndex, formatMinutes($sellTimeTotal))
     ->setCellValue('F' . $currentRowIndex, formatMinutes($actualTimeTotal))
 ;
