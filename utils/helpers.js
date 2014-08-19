@@ -4,10 +4,10 @@ var moment = require('moment');
 exports.formatMinutes = function (minutes) {
     var formatted = '';
     if (minutes >= 60) {
-        formatted += Math.floor(minutes/60) + ' ч ';
+        formatted += Math.floor(minutes/60) + 'ч ';
     }
     if (minutes % 60 > 0) {
-        formatted += minutes % 60 + ' мин';
+        formatted += minutes % 60 + 'мин';
     }
     return formatted ? formatted : minutes;
 };
