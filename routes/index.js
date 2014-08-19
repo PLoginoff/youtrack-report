@@ -63,6 +63,14 @@ exports.report1 = function(req, res){
 };
 
 exports.genReport1 = function (req, res) {
+    var projectData = {
+            projectId: req.body.project,
+            projectName: '',
+            projectLeadName: '',
+            currentDate: moment().format('DD/MM/YYYY'),
+            issues: []
+        };
+
     // || !req.body.email.join('').trim()
     if (!req.body.project) {
         req.flash('error', 'Не заполнены обязательные поля, отмеченные звездочкой');
@@ -101,7 +109,7 @@ exports.genReport1 = function (req, res) {
         }
 **/
 
-    function formatWorkItems (workItems) {
+    function formatWorkItems(workItems) {
         var issues = {}, id, author, duration, i;
 
         for (i = 0; i < workItems.length; i++) {
@@ -119,7 +127,7 @@ exports.genReport1 = function (req, res) {
         return issues;
     }
 
-    function getUsersInfo (logins, fullNames, positions) {
+    function getUsersInfo(logins, fullNames, positions) {
         var info = {}, i;
         for (i = 0; i < logins.length; i++) {
             info[logins[i]] = {
@@ -130,12 +138,60 @@ exports.genReport1 = function (req, res) {
         return info;
     }
 
-    function handleSuccess(config) {
-        var report = excel.execute(config);
-        res.cookie('downloaded', 1, {maxAge: 1000});
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats');
-        res.setHeader("Content-Disposition", "attachment; filename=" + "Report by project.xlsx");
-        res.end(report, 'binary');
+    function fillInProjectData(projectName, projectLeadName, issues, usersInfo, workItems) {
+        var i, issueId, durations, sellTime;
+
+        projectData.projectLeadName = projectLeadName;
+        projectData.projectName = projectName;
+
+        for (i = 0; i < issues.length; i++) {
+            issueId = helpers.getIssueId(issues[i]);
+            durations = workItems[issueId] || {};
+            for (var userLogin in durations) {
+                if (durations.hasOwnProperty(userLogin)) {
+                    spentTime = parseInt(helpers.getIssueFieldValue(issues[i]['field'], 'Spent time'), 10);
+                    estimationTime = parseInt(helpers.getIssueFieldValue(issues[i]['field'], 'Estimation'), 10);
+                    if (!estimationTime || estimationTime < spentTime) {
+                        estimationTime = spentTime;
+                    }
+                    sellTime = Math.round(estimationTime * durations[userLogin] / spentTime);
+
+                    projectData.issues.push({
+                        issueId: issueId,
+                        issueSummary: helpers.sanitizeValue(helpers.getIssueFieldValue(issues[i]['field'], 'summary') + ''),
+                        asigneeFullName: usersInfo[userLogin]['fullName'],
+                        asigneePosition: usersInfo[userLogin]['position'] || '',
+                        sellTime: sellTime,
+                        actualTime: durations[userLogin]
+                    });
+                }
+            }
+        }
+    }
+
+    function handleSuccess() {
+        var child, filename;
+        child = exec("php -f excel/report1.php", function (error, stdout, stderror) {
+            if (stderror) {
+              handleFailure(stderror);
+              return;
+            }
+            filename = stdout.match(/[^ :]+\.xlsx$/);
+            if (!filename) {
+                handleFailure("Error: unknown");
+                return;
+            }
+            fs.readFileAsync(filename[0]).done(function (buffer) {
+                res.cookie('downloaded', 1, {maxAge: 1000});
+                res.writeHead(200, {
+                  "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                  "Content-Disposition": "attachment;filename='Report by project (" + projectData.projectId + "-" + projectData.currentDate + ").xlsx'"
+                });
+                res.end(buffer);
+            });
+        });
+        child.stdin.write(JSON.stringify(projectData));
+        child.stdin.end();
     }
 
     function handleFailure(err) {
@@ -155,9 +211,13 @@ exports.genReport1 = function (req, res) {
 
     var loggedInPromise = when(client.login(config.YOUTRACK_USER, config.YOUTRACK_PASSWORD));
 
-    var projectLeadFullNamePromise = loggedInPromise
-            // TODO use .fold()
-            .then(client.getProject.bind(client, req.body.project))
+    var projectPromise = loggedInPromise
+            .then(client.getProject.bind(client, req.body.project));
+
+    var projectNamePromise = projectPromise
+            .then(helpers.getProjectName);
+
+    var projectLeadFullNamePromise = projectPromise
             .then(helpers.getProjectLeadUsername)
             .then(client.getUser)
             .then(helpers.getUserFullName);
@@ -192,13 +252,13 @@ exports.genReport1 = function (req, res) {
         .spread(getUsersInfo);
 
     when.join(
-            req.body.project, // project ID
+            projectNamePromise,
             projectLeadFullNamePromise,
             projectIssuesPromise,
             usersInfoPromise,
             workItemsPromise
         )
-        .then(getReport1Conf)
+        .spread(fillInProjectData)
         .then(handleSuccess)
         .otherwise(handleFailure);
 };
@@ -399,10 +459,12 @@ exports.genReport3 = function (req, res) {
         child = exec("php -f excel/report3.php", function (error, stdout, stderror) {
             if (stderror) {
               handleFailure(stderror);
+              return;
             }
             filename = stdout.match(/[^ :]+\.xlsx$/);
             if (!filename) {
                 handleFailure("Error: unknown");
+                return;
             }
             fs.readFileAsync(filename[0]).done(function (buffer) {
                 res.cookie('downloaded', 1, {maxAge: 1000});
