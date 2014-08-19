@@ -19,7 +19,7 @@ if ($data === null) {
 $spentTime = $data['timeInfo'];
 
 $spreadsheet = new PHPExcel();
-$spreadsheet->getActiveSheet();
+$spreadsheet->setActiveSheetIndex(0);
 
 $spreadsheet->getActiveSheet()
     ->setCellValue('C3', 'Отчет в часах о проекте ' . $data['projectName'])
@@ -239,7 +239,11 @@ $spreadsheet->getActiveSheet()->getStyle('C12:L' . $currentRowIndex)->applyFromA
   ))
 );
 
-$tmpFileName = sprintf('/tmp/%s.xlsx', time());
+if (!is_dir('/tmp/youtrack-report')) {
+    mkdir('/tmp/youtrack-report');
+}
+
+$tmpFileName = sprintf('/tmp/youtrack-report/%s.xlsx', time());
 
 $objWriter = PHPExcel_IOFactory::createWriter($spreadsheet, 'Excel2007');
 $objWriter->save($tmpFileName);
