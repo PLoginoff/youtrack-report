@@ -1,7 +1,6 @@
 var express = require('express');
 var path = require('path');
 var http = require('http');
-var mongoose = require('mongoose');
 var favicon = require('static-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
@@ -11,12 +10,32 @@ var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 var config = require('./config');
 var routes = require('./routes');
+var users = config.USERS;
 
 // passport config
-var Account = require('./models/account');
-passport.use(new LocalStrategy(Account.authenticate()));
-passport.serializeUser(Account.serializeUser());
-passport.deserializeUser(Account.deserializeUser());
+passport.use(new LocalStrategy(
+  function(username, password, done) {
+    var isValid = users.some(function (user) {
+      return user.username === username && user.password === password;
+    });
+
+    if (!isValid) {
+      return done(null, false);
+    }
+
+    return done(null, {username: username});
+  }
+));
+passport.serializeUser(function (user, done) {
+  done(null, user.username);
+});
+passport.deserializeUser(function (username, done) {
+  users.forEach(function (user) {
+    if (user.username === username) {
+      done(null, user);
+    }
+  });
+});
 
 var app = express();
 
@@ -39,16 +58,17 @@ app.use(app.router);
 
 function ensureAuthenticated(req, res, next) {
     if (req.user) { return next(); }
-    res.redirect('/login')
+    res.redirect('/login');
 }
-
-// mongoose
-mongoose.connect('mongodb://localhost/passport_local_mongoose');
 
 // Routes
 
 app.get('/login', routes.login);
-app.post('/login', passport.authenticate('local', { failureRedirect: '/login' }), routes.loginSuccess);
+app.post('/login',
+  passport.authenticate('local', { failureRedirect: '/login' }),
+  function(req, res) {
+      res.redirect('/');
+    });
 app.get('/logout', routes.logout);
 
 // Protected routs
